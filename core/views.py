@@ -77,7 +77,7 @@ def visit_create(request, pk):
             return redirect("patient_detail", pk=patient.pk)
     else:
         form = VisitForm(initial={"visit_date": timezone.localdate()})
-    return render(request, "core/visit_form.html", {"form": form, "patient": patient})
+    return render(request, "core/visit_form.html", {"form": form, "patient": patient, "title": "Add Visit"})
 
 
 @login_required
@@ -100,3 +100,38 @@ def dashboard(request):
         .order_by("-total"),
     }
     return render(request, "core/dashboard.html", context)
+def visits_for(user):
+    """Visits that belong to patients this user is allowed to see."""
+    return Visit.objects.filter(patient__in=patients_for(user)).select_related("patient")
+
+@login_required
+def visit_detail(request, pk):
+    visit = get_object_or_404(visits_for(request.user), pk=pk)
+    return render(request, "core/visit_detail.html", {"visit": visit})
+
+
+@login_required
+def visit_update(request, pk):
+    visit = get_object_or_404(visits_for(request.user), pk=pk)
+    if request.method == "POST":
+        form = VisitForm(request.POST, instance=visit)
+        if form.is_valid():
+            form.save()
+            return redirect("visit_detail", pk=visit.pk)
+    else:
+        form = VisitForm(instance=visit)
+    return render(
+        request,
+        "core/visit_form.html",
+        {"form": form, "patient": visit.patient, "title": "Edit Visit"},
+    )
+
+
+@login_required
+def visit_delete(request, pk):
+    visit = get_object_or_404(visits_for(request.user), pk=pk)
+    patient_pk = visit.patient.pk
+    if request.method == "POST":
+        visit.delete()
+        return redirect("patient_detail", pk=patient_pk)
+    return render(request, "core/visit_confirm_delete.html", {"visit": visit})

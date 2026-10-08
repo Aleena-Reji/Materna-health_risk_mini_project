@@ -25,15 +25,20 @@
             <th>Symptoms</th>
             <th>Prediction</th>
             <th>Recommendation</th>
+            <th>Actions</th>
         </tr>
     </thead>
     <tbody>
         {% for visit in visits %}
         <tr>
-            <td>{{ visit.visit_date }}</td>
+            <td><a href="{% url 'visit_detail' visit.pk %}">{{ visit.visit_date }}</a></td>
             <td>{{ visit.symptoms|default:"-" }}</td>
             <td>{{ visit.predicted_result|default:"Pending" }}</td>
             <td>{{ visit.recommendation_text|default:"-" }}</td>
+            <td>
+                <a href="{% url 'visit_update' visit.pk %}" class="action">Edit</a>
+                <a href="{% url 'visit_delete' visit.pk %}" class="action danger">Delete</a>
+            </td>
         </tr>
         {% endfor %}
     </tbody>

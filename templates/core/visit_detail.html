@@ -1,0 +1,26 @@
+{% extends "core/base.html" %}
+
+{% block title %}Visit - Materna{% endblock %}
+
+{% block content %}
+<h2>Visit on {{ visit.visit_date }}</h2>
+<p class="muted">
+    Patient:
+    <a href="{% url 'patient_detail' visit.patient.pk %}">{{ visit.patient.name }}</a>
+</p>
+
+<p>
+    <a href="{% url 'visit_update' visit.pk %}" class="btn">Edit</a>
+    <a href="{% url 'visit_delete' visit.pk %}" class="btn-link danger">Delete</a>
+    <a href="{% url 'patient_detail' visit.patient.pk %}" class="btn-link">Back to patient</a>
+</p>
+
+<div class="card-form detail-card">
+    <p><strong>Symptoms</strong><br>{{ visit.symptoms|default:"-"|linebreaksbr }}</p>
+    <p><strong>Predicted result</strong><br>{{ visit.predicted_result|default:"Pending" }}</p>
+    <p><strong>Confidence</strong><br>{{ visit.prediction_confidence|default:"-" }}</p>
+    <p><strong>Model version</strong><br>{{ visit.model_version|default:"-" }}</p>
+    <p><strong>Recommendation</strong><br>{{ visit.recommendation_text|default:"-"|linebreaksbr }}</p>
+    <p class="muted">Recorded {{ visit.created_at }}</p>
+</div>
+{% endblock %}
