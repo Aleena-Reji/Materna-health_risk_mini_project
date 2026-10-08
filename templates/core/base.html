@@ -87,14 +87,35 @@
 .muted { color: var(--muted); }
 td a { color: var(--primary-dark); font-weight: 600; text-decoration: none; }
 td a:hover { text-decoration: underline; }
+
+nav { display: flex; align-items: center; }
+.who { color: rgba(255,255,255,0.7); margin-left: 20px; font-size: 14px; }
+.logout-form { margin: 0 0 0 16px; }
+.logout-form button {
+    background: transparent;
+    color: white;
+    border: 1px solid rgba(255,255,255,0.6);
+    border-radius: 6px;
+    padding: 5px 12px;
+    cursor: pointer;
+    font-size: 14px;
+}
+.logout-form button:hover { background: rgba(255,255,255,0.15); }
     </style>
 </head>
 <body>
     <header>
         <h1>Materna</h1>
-        <nav>
-            <a href="/patients/">Patients</a>
-            <a href="/admin/">Admin</a>
+                <nav>
+            {% if user.is_authenticated %}
+                <a href="{% url 'patient_list' %}">Patients</a>
+                {% if user.is_staff %}<a href="/admin/">Admin</a>{% endif %}
+                <span class="who">{{ user.username }}</span>
+                <form method="post" action="{% url 'logout' %}" class="logout-form">
+                    {% csrf_token %}
+                    <button type="submit">Logout</button>
+                </form>
+            {% endif %}
         </nav>
     </header>
     <main>

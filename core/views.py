@@ -5,9 +5,16 @@ from .forms import PatientForm, VisitForm
 from .models import Patient
 
 
+def patients_for(user):
+    """Admins/superusers see everyone; doctors see only their own patients."""
+    if user.is_superuser or user.role == "admin":
+        return Patient.objects.all()
+    return Patient.objects.filter(user=user)
+
+
 @login_required
 def patient_list(request):
-    patients = Patient.objects.all().order_by("-created_at")
+    patients = patients_for(request.user).order_by("-created_at")
     return render(request, "core/patient_list.html", {"patients": patients})
 
 
@@ -27,14 +34,14 @@ def patient_create(request):
 
 @login_required
 def patient_detail(request, pk):
-    patient = get_object_or_404(Patient, pk=pk)
+    patient = get_object_or_404(patients_for(request.user), pk=pk)
     visits = patient.visits.order_by("-visit_date")
     return render(request, "core/patient_detail.html", {"patient": patient, "visits": visits})
 
 
 @login_required
 def visit_create(request, pk):
-    patient = get_object_or_404(Patient, pk=pk)
+    patient = get_object_or_404(patients_for(request.user), pk=pk)
     if request.method == "POST":
         form = VisitForm(request.POST)
         if form.is_valid():

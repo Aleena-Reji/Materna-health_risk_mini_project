@@ -113,8 +113,9 @@ USE_I18N = True
 
 USE_TZ = True
 
-LOGIN_URL = '/admin/login/'
-LOGIN_REDIRECT_URL = '/patients/'
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'patient_list'
+LOGOUT_REDIRECT_URL = 'login'
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
