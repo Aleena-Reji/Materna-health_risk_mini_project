@@ -122,6 +122,22 @@ nav { display: flex; align-items: center; }
 .btn-danger:hover { background: #991b1b; }
 .danger { color: #b91c1c !important; }
 td a.action { font-weight: 500; margin-right: 12px; }
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+}
+.stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+}
+.stat-number { font-size: 32px; font-weight: 700; color: var(--primary); }
+.stat-label { color: var(--muted); font-size: 14px; margin-top: 4px; }
+h3 { color: var(--primary-dark); margin-top: 28px; }
     </style>
 </head>
 <body>
@@ -129,6 +145,7 @@ td a.action { font-weight: 500; margin-right: 12px; }
         <h1>Materna</h1>
                 <nav>
             {% if user.is_authenticated %}
+                <a href="{% url 'dashboard' %}">Dashboard</a>
                 <a href="{% url 'patient_list' %}">Patients</a>
                 {% if user.is_staff %}<a href="/admin/">Admin</a>{% endif %}
                 <span class="who">{{ user.username }}</span>

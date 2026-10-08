@@ -1,0 +1,70 @@
+{% extends "core/base.html" %}
+
+{% block title %}Dashboard - Materna{% endblock %}
+
+{% block content %}
+<h2>Dashboard</h2>
+
+<div class="stats">
+    <div class="stat-card">
+        <div class="stat-number">{{ patient_count }}</div>
+        <div class="stat-label">Patients</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ visit_count }}</div>
+        <div class="stat-label">Total visits</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ month_visits }}</div>
+        <div class="stat-label">Visits this month</div>
+    </div>
+</div>
+
+<p>
+    <a href="{% url 'patient_create' %}" class="btn">+ Add Patient</a>
+    <a href="{% url 'patient_list' %}" class="btn-link">View all patients</a>
+</p>
+
+<h3>Recent visits</h3>
+{% if recent_visits %}
+<table>
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Patient</th>
+            <th>Prediction</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for visit in recent_visits %}
+        <tr>
+            <td>{{ visit.visit_date }}</td>
+            <td><a href="{% url 'patient_detail' visit.patient.pk %}">{{ visit.patient.name }}</a></td>
+            <td>{{ visit.predicted_result|default:"Pending" }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No visits recorded yet.</p>
+{% endif %}
+
+<h3>Risk summary</h3>
+{% if risk_summary %}
+<table>
+    <thead>
+        <tr><th>Predicted result</th><th>Visits</th></tr>
+    </thead>
+    <tbody>
+        {% for row in risk_summary %}
+        <tr>
+            <td>{{ row.predicted_result }}</td>
+            <td>{{ row.total }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p class="muted">No predictions yet. Results will appear here once the risk model is connected.</p>
+{% endif %}
+{% endblock %}

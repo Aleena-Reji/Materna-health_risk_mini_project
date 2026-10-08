@@ -1,9 +1,9 @@
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
+from django.db.models import Count, Q
+from .models import Patient, Visit
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from .forms import PatientForm, VisitForm
-from .models import Patient
 
 
 def patients_for(user):
@@ -78,3 +78,25 @@ def visit_create(request, pk):
     else:
         form = VisitForm(initial={"visit_date": timezone.localdate()})
     return render(request, "core/visit_form.html", {"form": form, "patient": patient})
+
+
+@login_required
+def dashboard(request):
+    patients = patients_for(request.user)
+    visits = Visit.objects.filter(patient__in=patients)
+    today = timezone.localdate()
+    context = {
+        "patient_count": patients.count(),
+        "visit_count": visits.count(),
+        "month_visits": visits.filter(
+            visit_date__year=today.year, visit_date__month=today.month
+        ).count(),
+        "recent_visits": visits.select_related("patient").order_by(
+            "-visit_date", "-created_at"
+        )[:5],
+        "risk_summary": visits.exclude(predicted_result="")
+        .values("predicted_result")
+        .annotate(total=Count("id"))
+        .order_by("-total"),
+    }
+    return render(request, "core/dashboard.html", context)
