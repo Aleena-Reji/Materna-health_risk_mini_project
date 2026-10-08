@@ -9,11 +9,14 @@ from .models import Patient, Visit
 class PatientForm(forms.ModelForm):
     class Meta:
         model = Patient
-        fields = ["name", "age", "contact"]
+        fields = ["patient_id", "name", "age", "contact"]
         widgets = {
             "age": forms.NumberInput(attrs={"min": 10, "max": 70}),
             "contact": forms.TextInput(attrs={"placeholder": "e.g. 9876543210"}),
         }
+
+    def clean_patient_id(self):
+        return self.cleaned_data["patient_id"].strip().upper()
 
     def clean_name(self):
         name = self.cleaned_data["name"].strip()

@@ -2,20 +2,18 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.utils import timezone
 from .forms import PatientForm, VisitForm
 from .models import Patient, Visit
 
 
 def patients_for(user):
-    """Admins/superusers see everyone; doctors see only their own patients."""
-    if user.is_superuser or user.role == "admin":
-        return Patient.objects.all()
-    return Patient.objects.filter(user=user)
+    """All health workers share access to patient records (continuity of care)."""
+    return Patient.objects.all()
 
 
 def visits_for(user):
-    """Visits that belong to patients this user is allowed to see."""
     return Visit.objects.filter(patient__in=patients_for(user)).select_related("patient")
 
 
@@ -30,7 +28,7 @@ def dashboard(request):
         "month_visits": visits.filter(
             visit_date__year=today.year, visit_date__month=today.month
         ).count(),
-        "recent_visits": visits.select_related("patient").order_by(
+        "recent_visits": visits.select_related("patient", "recorded_by").order_by(
             "-visit_date", "-created_at"
         )[:5],
         "risk_summary": visits.exclude(predicted_result="")
@@ -42,11 +40,25 @@ def dashboard(request):
 
 
 @login_required
+def patient_lookup(request):
+    pid = request.GET.get("pid", "").strip().upper()
+    if not pid:
+        return redirect("patient_list")
+    patient = patients_for(request.user).filter(patient_id__iexact=pid).first()
+    if patient:
+        return redirect("patient_detail", pk=patient.pk)
+    messages.error(request, f"No patient found with ID {pid}. You can register her below.")
+    return redirect(f"{reverse('patient_create')}?patient_id={pid}")
+
+
+@login_required
 def patient_list(request):
     patients = patients_for(request.user).order_by("-created_at")
     q = request.GET.get("q", "").strip()
     if q:
-        patients = patients.filter(Q(name__icontains=q) | Q(contact__icontains=q))
+        patients = patients.filter(
+            Q(patient_id__icontains=q) | Q(name__icontains=q) | Q(contact__icontains=q)
+        )
     return render(request, "core/patient_list.html", {"patients": patients, "q": q})
 
 
@@ -61,14 +73,14 @@ def patient_create(request):
             messages.success(request, f"Patient {patient.name} was added.")
             return redirect("patient_detail", pk=patient.pk)
     else:
-        form = PatientForm()
+        form = PatientForm(initial={"patient_id": request.GET.get("patient_id", "")})
     return render(request, "core/patient_form.html", {"form": form, "title": "Add Patient"})
 
 
 @login_required
 def patient_detail(request, pk):
     patient = get_object_or_404(patients_for(request.user), pk=pk)
-    visits = patient.visits.order_by("-visit_date")
+    visits = patient.visits.select_related("recorded_by").order_by("-visit_date")
     return render(request, "core/patient_detail.html", {"patient": patient, "visits": visits})
 
 
@@ -105,6 +117,7 @@ def visit_create(request, pk):
         if form.is_valid():
             visit = form.save(commit=False)
             visit.patient = patient
+            visit.recorded_by = request.user
             visit.save()
             messages.success(request, "Visit recorded.")
             return redirect("patient_detail", pk=patient.pk)
