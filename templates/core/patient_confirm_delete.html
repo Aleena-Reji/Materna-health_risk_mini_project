@@ -1,0 +1,15 @@
+{% extends "core/base.html" %}
+
+{% block title %}Delete Patient - Materna{% endblock %}
+
+{% block content %}
+<h2>Delete patient</h2>
+
+<form method="post" class="card-form">
+    {% csrf_token %}
+    <p>Are you sure you want to delete <strong>{{ patient.name }}</strong>?</p>
+    <p class="muted">This also deletes all of this patient's visits and cannot be undone.</p>
+    <button type="submit" class="btn btn-danger">Yes, delete</button>
+    <a href="{% url 'patient_detail' patient.pk %}" class="btn-link">Cancel</a>
+</form>
+{% endblock %}

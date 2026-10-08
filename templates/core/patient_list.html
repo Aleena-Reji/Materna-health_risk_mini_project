@@ -4,7 +4,15 @@
 
 {% block content %}
 <h2>Patients</h2>
-<p><a href="{% url 'patient_create' %}" class="btn">+ Add Patient</a></p>
+
+<div class="toolbar">
+    <form method="get" class="search-form">
+        <input type="text" name="q" value="{{ q }}" placeholder="Search by name or contact">
+        <button type="submit" class="btn">Search</button>
+        {% if q %}<a href="{% url 'patient_list' %}" class="btn-link">Clear</a>{% endif %}
+    </form>
+    <a href="{% url 'patient_create' %}" class="btn">+ Add Patient</a>
+</div>
 
 {% if patients %}
 <table>
@@ -14,6 +22,7 @@
             <th>Age</th>
             <th>Contact</th>
             <th>Visits</th>
+            <th>Actions</th>
         </tr>
     </thead>
     <tbody>
@@ -23,11 +32,15 @@
             <td>{{ patient.age|default:"-" }}</td>
             <td>{{ patient.contact|default:"-" }}</td>
             <td>{{ patient.visits.count }}</td>
+            <td>
+                <a href="{% url 'patient_update' patient.pk %}" class="action">Edit</a>
+                <a href="{% url 'patient_delete' patient.pk %}" class="action danger">Delete</a>
+            </td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 {% else %}
-<p>No patients yet.</p>
+<p>{% if q %}No patients match "{{ q }}".{% else %}No patients yet.{% endif %}</p>
 {% endif %}
 {% endblock %}

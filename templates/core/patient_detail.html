@@ -11,6 +11,8 @@
 
 <p>
     <a href="{% url 'visit_create' patient.pk %}" class="btn">+ Add Visit</a>
+    <a href="{% url 'patient_update' patient.pk %}" class="btn-link">Edit</a>
+    <a href="{% url 'patient_delete' patient.pk %}" class="btn-link danger">Delete</a>
     <a href="{% url 'patient_list' %}" class="btn-link">Back to patients</a>
 </p>
 
