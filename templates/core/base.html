@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Materna{% endblock %}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background: #f5f7fa;
+            color: #222;
+        }
+        header {
+            background: #c2185b;
+            color: white;
+            padding: 16px 32px;
+        }
+        header h1 { margin: 0; font-size: 22px; }
+        nav a {
+            color: white;
+            margin-right: 16px;
+            text-decoration: none;
+        }
+        main {
+            max-width: 900px;
+            margin: 24px auto;
+            padding: 0 16px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+        th, td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+        th { background: #f0f0f0; }
+        .btn {
+    display: inline-block;
+    background: var(--primary);
+    color: white;
+    padding: 9px 18px;
+    border: none;
+    border-radius: 6px;
+    font-size: 15px;
+    cursor: pointer;
+    text-decoration: none;
+}
+.btn:hover { background: var(--primary-dark); }
+.btn-link { margin-left: 12px; color: var(--muted); text-decoration: none; }
+
+.card-form {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    max-width: 480px;
+}
+.card-form p { margin: 0 0 16px; }
+.card-form label { display: block; font-weight: 600; margin-bottom: 6px; }
+.card-form input, .card-form select {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 15px;
+}
+.card-form input:focus, .card-form select:focus {
+    outline: 2px solid var(--primary);
+    border-color: var(--primary);
+}
+.card-form textarea {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 15px;
+    font-family: inherit;
+}
+.card-form textarea:focus {
+    outline: 2px solid var(--primary);
+    border-color: var(--primary);
+}
+.muted { color: var(--muted); }
+td a { color: var(--primary-dark); font-weight: 600; text-decoration: none; }
+td a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Materna</h1>
+        <nav>
+            <a href="/patients/">Patients</a>
+            <a href="/admin/">Admin</a>
+        </nav>
+    </header>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

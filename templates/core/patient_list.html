@@ -1,0 +1,35 @@
+{% extends "core/base.html" %}
+
+{% block title %}Patients - Materna{% endblock %}
+
+{% block content %}
+<h2>Patients</h2>
+<p><a href="{% url 'patient_create' %}" class="btn">+ Add Patient</a></p>
+
+{% if patients %}
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Age</th>
+            <th>Gender</th>
+            <th>Contact</th>
+            <th>Visits</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for patient in patients %}
+        <tr>
+            <td><a href="{% url 'patient_detail' patient.pk %}">{{ patient.name }}</a></td>
+            <td>{{ patient.age|default:"-" }}</td>
+            <td>{{ patient.gender|default:"-" }}</td>
+            <td>{{ patient.contact|default:"-" }}</td>
+            <td>{{ patient.visits.count }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No patients yet.</p>
+{% endif %}
+{% endblock %}

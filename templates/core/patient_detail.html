@@ -1,0 +1,43 @@
+{% extends "core/base.html" %}
+
+{% block title %}{{ patient.name }} - Materna{% endblock %}
+
+{% block content %}
+<h2>{{ patient.name }}</h2>
+<p class="muted">
+    Age: {{ patient.age|default:"-" }} &nbsp;|&nbsp;
+    Gender: {{ patient.gender|default:"-" }} &nbsp;|&nbsp;
+    Contact: {{ patient.contact|default:"-" }}
+</p>
+
+<p>
+    <a href="{% url 'visit_create' patient.pk %}" class="btn">+ Add Visit</a>
+    <a href="{% url 'patient_list' %}" class="btn-link">Back to patients</a>
+</p>
+
+<h3>Visit history</h3>
+{% if visits %}
+<table>
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Symptoms</th>
+            <th>Prediction</th>
+            <th>Recommendation</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for visit in visits %}
+        <tr>
+            <td>{{ visit.visit_date }}</td>
+            <td>{{ visit.symptoms|default:"-" }}</td>
+            <td>{{ visit.predicted_result|default:"Pending" }}</td>
+            <td>{{ visit.recommendation_text|default:"-" }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No visits recorded yet.</p>
+{% endif %}
+{% endblock %}
