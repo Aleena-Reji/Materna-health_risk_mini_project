@@ -3,7 +3,13 @@
 {% block title %}Dashboard - Materna{% endblock %}
 
 {% block content %}
-<h2>Dashboard</h2>
+<h2>Welcome back, {{ user.first_name|default:user.username }}</h2>
+<p class="muted">Here's an overview of patients and visits across the clinic.</p>
+
+<form method="get" action="{% url 'patient_lookup' %}" class="search-form lookup-box">
+    <input type="text" name="pid" placeholder="Enter patient ID to open her record" required autofocus>
+    <button type="submit" class="btn">Find patient</button>
+</form>
 
 <div class="stats">
     <div class="stat-card">
@@ -31,22 +37,28 @@
     <thead>
         <tr>
             <th>Date</th>
+            <th>Patient ID</th>
             <th>Patient</th>
             <th>Prediction</th>
+            <th>Recorded by</th>
         </tr>
     </thead>
     <tbody>
         {% for visit in recent_visits %}
         <tr>
-            <td>{{ visit.visit_date }}</td>
+            <td><a href="{% url 'visit_detail' visit.pk %}">{{ visit.visit_date }}</a></td>
+            <td>{{ visit.patient.patient_id }}</td>
             <td><a href="{% url 'patient_detail' visit.patient.pk %}">{{ visit.patient.name }}</a></td>
             <td>{{ visit.predicted_result|default:"Pending" }}</td>
+            <td>
+                {% if visit.recorded_by %}{{ visit.recorded_by.get_full_name|default:visit.recorded_by.username }}{% else %}-{% endif %}
+            </td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 {% else %}
-<p>No visits recorded yet.</p>
+<p class="muted">No visits recorded yet.</p>
 {% endif %}
 
 <h3>Risk summary</h3>

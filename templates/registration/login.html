@@ -3,11 +3,14 @@
 {% block title %}Login - Materna{% endblock %}
 
 {% block content %}
-<h2>Login</h2>
+<div class="auth-wrap">
+    <h2>Welcome back</h2>
+    <p class="muted" style="text-align:center;">Log in to continue to Materna.</p>
 
-<form method="post" class="card-form">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit" class="btn">Log in</button>
-</form>
+    <form method="post" class="card-form">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn">Log in</button>
+    </form>
+</div>
 {% endblock %}

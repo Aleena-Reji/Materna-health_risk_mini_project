@@ -5,8 +5,10 @@
 {% block content %}
 <h2>{{ patient.name }}</h2>
 <p class="muted">
+    ID: {{ patient.patient_id }} &nbsp;|&nbsp;
     Age: {{ patient.age|default:"-" }} &nbsp;|&nbsp;
-    Contact: {{ patient.contact|default:"-" }}
+    Contact: {{ patient.contact|default:"-" }} &nbsp;|&nbsp;
+    Registered by {{ patient.user.get_full_name|default:patient.user.username }}
 </p>
 
 <p>
@@ -25,6 +27,7 @@
             <th>Symptoms</th>
             <th>Prediction</th>
             <th>Recommendation</th>
+            <th>Recorded by</th>
             <th>Actions</th>
         </tr>
     </thead>
@@ -35,6 +38,9 @@
             <td>{{ visit.symptoms|default:"-" }}</td>
             <td>{{ visit.predicted_result|default:"Pending" }}</td>
             <td>{{ visit.recommendation_text|default:"-" }}</td>
+            <td>
+                {% if visit.recorded_by %}{{ visit.recorded_by.get_full_name|default:visit.recorded_by.username }}{% else %}-{% endif %}
+            </td>
             <td>
                 <a href="{% url 'visit_update' visit.pk %}" class="action">Edit</a>
                 <a href="{% url 'visit_delete' visit.pk %}" class="action danger">Delete</a>

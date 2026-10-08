@@ -21,6 +21,9 @@
     <p><strong>Confidence</strong><br>{{ visit.prediction_confidence|default:"-" }}</p>
     <p><strong>Model version</strong><br>{{ visit.model_version|default:"-" }}</p>
     <p><strong>Recommendation</strong><br>{{ visit.recommendation_text|default:"-"|linebreaksbr }}</p>
-    <p class="muted">Recorded {{ visit.created_at }}</p>
+    <p class="muted">
+        Recorded {{ visit.created_at }}
+        {% if visit.recorded_by %}by {{ visit.recorded_by.get_full_name|default:visit.recorded_by.username }}{% endif %}
+    </p>
 </div>
 {% endblock %}
