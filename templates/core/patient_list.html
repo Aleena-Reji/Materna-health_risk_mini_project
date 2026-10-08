@@ -12,7 +12,6 @@
         <tr>
             <th>Name</th>
             <th>Age</th>
-            <th>Gender</th>
             <th>Contact</th>
             <th>Visits</th>
         </tr>
@@ -22,7 +21,6 @@
         <tr>
             <td><a href="{% url 'patient_detail' patient.pk %}">{{ patient.name }}</a></td>
             <td>{{ patient.age|default:"-" }}</td>
-            <td>{{ patient.gender|default:"-" }}</td>
             <td>{{ patient.contact|default:"-" }}</td>
             <td>{{ patient.visits.count }}</td>
         </tr>

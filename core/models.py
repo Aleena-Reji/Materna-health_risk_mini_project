@@ -17,7 +17,6 @@ class Patient(models.Model):
     )  # who registered/manages this patient
     name = models.CharField(max_length=100)
     age = models.PositiveIntegerField(null=True, blank=True)
-    gender = models.CharField(max_length=10, blank=True)
     contact = models.CharField(max_length=20, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

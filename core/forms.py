@@ -5,7 +5,7 @@ from .models import Patient, Visit
 class PatientForm(forms.ModelForm):
     class Meta:
         model = Patient
-        fields = ["name", "age", "gender", "contact"]
+        fields = ["name", "age", "contact"]
         widgets = {
             "gender": forms.Select(
                 choices=[("", "Select"), ("Female", "Female"), ("Male", "Male"), ("Other", "Other")]
