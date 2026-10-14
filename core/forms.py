@@ -9,7 +9,10 @@ from .models import Patient, Visit
 class PatientForm(forms.ModelForm):
     class Meta:
         model = Patient
-        fields = ["patient_id", "name", "age", "contact"]
+        fields = [
+            "patient_id", "name", "age", "contact",
+            "previous_complications", "preexisting_diabetes",
+        ]
         widgets = {
             "age": forms.NumberInput(attrs={"min": 10, "max": 70}),
             "contact": forms.TextInput(attrs={"placeholder": "e.g. 9876543210"}),
@@ -26,7 +29,7 @@ class PatientForm(forms.ModelForm):
 
     def clean_age(self):
         age = self.cleaned_data.get("age")
-        if age is not None and not (10 <= age <= 70):
+        if age is None or not (10 <= age <= 70):
             raise forms.ValidationError("Age must be between 10 and 70.")
         return age
 
@@ -45,10 +48,17 @@ class PatientForm(forms.ModelForm):
 class VisitForm(forms.ModelForm):
     class Meta:
         model = Visit
-        fields = ["visit_date", "symptoms"]
+        fields = [
+            "visit_date", "systolic_bp", "diastolic_bp", "blood_sugar",
+            "body_temp", "bmi", "heart_rate",
+            "gestational_diabetes", "mental_health", "symptoms",
+        ]
         widgets = {
             "visit_date": forms.DateInput(attrs={"type": "date"}),
-            "symptoms": forms.Textarea(attrs={"rows": 4}),
+            "blood_sugar": forms.NumberInput(attrs={"step": "0.1"}),
+            "body_temp": forms.NumberInput(attrs={"step": "0.1"}),
+            "bmi": forms.NumberInput(attrs={"step": "0.1"}),
+            "symptoms": forms.Textarea(attrs={"rows": 3}),
         }
 
     def clean_visit_date(self):
@@ -56,3 +66,10 @@ class VisitForm(forms.ModelForm):
         if visit_date > timezone.localdate():
             raise forms.ValidationError("Visit date cannot be in the future.")
         return visit_date
+
+    def clean(self):
+        cleaned = super().clean()
+        sys, dia = cleaned.get("systolic_bp"), cleaned.get("diastolic_bp")
+        if sys and dia and sys <= dia:
+            self.add_error("systolic_bp", "Systolic BP must be higher than diastolic BP.")
+        return cleaned
