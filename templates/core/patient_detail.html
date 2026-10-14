@@ -6,9 +6,14 @@
 <h2>{{ patient.name }}</h2>
 <p class="muted">
     ID: {{ patient.patient_id }} &nbsp;|&nbsp;
-    Age: {{ patient.age|default:"-" }} &nbsp;|&nbsp;
+    Age: {{ patient.age }} &nbsp;|&nbsp;
     Contact: {{ patient.contact|default:"-" }} &nbsp;|&nbsp;
     Registered by {{ patient.user.get_full_name|default:patient.user.username }}
+</p>
+<p class="muted">
+    Previous complications: <strong>{{ patient.previous_complications|yesno:"Yes,No" }}</strong>
+    &nbsp;|&nbsp;
+    Pre-existing diabetes: <strong>{{ patient.preexisting_diabetes|yesno:"Yes,No" }}</strong>
 </p>
 
 <p>
@@ -18,14 +23,43 @@
     <a href="{% url 'patient_list' %}" class="btn-link">Back to patients</a>
 </p>
 
+<div class="stats">
+    <div class="stat-card">
+        <div class="stat-number">{{ visits|length }}</div>
+        <div class="stat-label">Total visits</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number" style="font-size:18px;">
+            {% if latest %}{{ latest.visit_date }}{% else %}-{% endif %}
+        </div>
+        <div class="stat-label">Last visit</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number" style="font-size:18px;">
+            {% if latest %}{% include "core/_risk_badge.html" with visit=latest %}{% else %}-{% endif %}
+        </div>
+        <div class="stat-label">Latest risk level</div>
+    </div>
+</div>
+
+<h3>Risk trend</h3>
+{% if trend %}
+<div class="chart-card">
+    <canvas id="trendChart" height="90"></canvas>
+</div>
+{{ trend|json_script:"trend-data" }}
+{% else %}
+<p class="muted">The risk trend will appear here once predictions are recorded across visits.</p>
+{% endif %}
+
 <h3>Visit history</h3>
 {% if visits %}
 <table>
     <thead>
         <tr>
             <th>Date</th>
-            <th>Symptoms</th>
-            <th>Prediction</th>
+            <th>Readings</th>
+            <th>Risk level</th>
             <th>Recommendation</th>
             <th>Recorded by</th>
             <th>Actions</th>
@@ -35,9 +69,14 @@
         {% for visit in visits %}
         <tr>
             <td><a href="{% url 'visit_detail' visit.pk %}">{{ visit.visit_date }}</a></td>
-            <td>{{ visit.symptoms|default:"-" }}</td>
-            <td>{{ visit.predicted_result|default:"Pending" }}</td>
-            <td>{{ visit.recommendation_text|default:"-" }}</td>
+            <td>
+                {{ visit.systolic_bp }}/{{ visit.diastolic_bp }} mmHg<br>
+                <span class="muted">
+                    Sugar {{ visit.blood_sugar }} · {{ visit.body_temp }}°F · BMI {{ visit.bmi }} · {{ visit.heart_rate }} bpm
+                </span>
+            </td>
+            <td>{% include "core/_risk_badge.html" with visit=visit %}</td>
+            <td>{{ visit.recommendation_text|default:"-"|truncatechars:70 }}</td>
             <td>
                 {% if visit.recorded_by %}{{ visit.recorded_by.get_full_name|default:visit.recorded_by.username }}{% else %}-{% endif %}
             </td>
@@ -50,6 +89,40 @@
     </tbody>
 </table>
 {% else %}
-<p>No visits recorded yet.</p>
+<p class="muted">No visits recorded yet.</p>
+{% endif %}
+
+{% if trend %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script>
+    const trend = JSON.parse(document.getElementById("trend-data").textContent);
+    const names = {1: "Low", 2: "High"};
+    new Chart(document.getElementById("trendChart"), {
+        type: "line",
+        data: {
+            labels: trend.map(t => t.date),
+            datasets: [{
+                data: trend.map(t => t.score),
+                borderColor: "#c93a6e",
+                backgroundColor: "#c93a6e",
+                tension: 0.25,
+                pointRadius: 6,
+                pointHoverRadius: 8
+            }]
+        },
+        options: {
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: c => trend[c.dataIndex].label } }
+            },
+            scales: {
+                y: {
+                    min: 0, max: 3,
+                    ticks: { stepSize: 1, callback: v => names[v] || "" }
+                }
+            }
+        }
+    });
+</script>
 {% endif %}
 {% endblock %}

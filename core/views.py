@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.utils import timezone
 from .forms import PatientForm, VisitForm
 from .models import Patient, Visit
+from . import predictor
 
 
 def patients_for(user):
@@ -15,7 +16,15 @@ def patients_for(user):
 
 def visits_for(user):
     return Visit.objects.filter(patient__in=patients_for(user)).select_related("patient")
-
+def apply_prediction(request, visit):
+    try:
+        label = predictor.predict_visit(visit)
+        messages.success(request, f"Visit saved. Predicted risk: {label}.")
+    except Exception:
+        messages.warning(
+            request,
+            "Visit saved, but the risk prediction could not be run. Check the model files.",
+        )
 
 @login_required
 def dashboard(request):
@@ -118,8 +127,8 @@ def visit_create(request, pk):
             visit = form.save(commit=False)
             visit.patient = patient
             visit.recorded_by = request.user
+            apply_prediction(request, visit)
             visit.save()
-            messages.success(request, "Visit recorded.")
             return redirect("patient_detail", pk=patient.pk)
     else:
         form = VisitForm(initial={"visit_date": timezone.localdate()})
@@ -142,8 +151,9 @@ def visit_update(request, pk):
     if request.method == "POST":
         form = VisitForm(request.POST, instance=visit)
         if form.is_valid():
-            form.save()
-            messages.success(request, "Visit updated.")
+            visit = form.save(commit=False)
+            apply_prediction(request, visit)
+            visit.save()
             return redirect("visit_detail", pk=visit.pk)
     else:
         form = VisitForm(instance=visit)

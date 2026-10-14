@@ -1,0 +1,5 @@
+{% if visit.risk_class %}
+<span class="badge {{ visit.risk_class }}">{{ visit.predicted_result }}</span>
+{% else %}
+<span class="badge pending">Pending</span>
+{% endif %}

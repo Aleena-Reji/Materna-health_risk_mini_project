@@ -7,6 +7,9 @@
 <p class="muted">
     Patient:
     <a href="{% url 'patient_detail' visit.patient.pk %}">{{ visit.patient.name }}</a>
+    ({{ visit.patient.patient_id }}) &nbsp;|&nbsp;
+    Recorded {{ visit.created_at }}
+    {% if visit.recorded_by %}by {{ visit.recorded_by.get_full_name|default:visit.recorded_by.username }}{% endif %}
 </p>
 
 <p>
@@ -15,15 +18,58 @@
     <a href="{% url 'patient_detail' visit.patient.pk %}" class="btn-link">Back to patient</a>
 </p>
 
-<div class="card-form detail-card">
-    <p><strong>Symptoms</strong><br>{{ visit.symptoms|default:"-"|linebreaksbr }}</p>
-    <p><strong>Predicted result</strong><br>{{ visit.predicted_result|default:"Pending" }}</p>
-    <p><strong>Confidence</strong><br>{{ visit.prediction_confidence|default:"-" }}</p>
-    <p><strong>Model version</strong><br>{{ visit.model_version|default:"-" }}</p>
-    <p><strong>Recommendation</strong><br>{{ visit.recommendation_text|default:"-"|linebreaksbr }}</p>
-    <p class="muted">
-        Recorded {{ visit.created_at }}
-        {% if visit.recorded_by %}by {{ visit.recorded_by.get_full_name|default:visit.recorded_by.username }}{% endif %}
-    </p>
+<div class="result-grid">
+    <div class="result-box big-risk">
+        <h4>Predicted risk level</h4>
+        {% include "core/_risk_badge.html" with visit=visit %}
+        <p class="muted" style="margin:12px 0 0;">
+            Confidence:
+            {% if visit.prediction_confidence is not None %}{% widthratio visit.prediction_confidence 1 100 %}%{% else %}-{% endif %}
+            <br>Model version: {{ visit.model_version|default:"-" }}
+        </p>
+    </div>
+
+    <div class="result-box">
+        <h4>Recommendation</h4>
+        <p style="margin:0; line-height:1.6;">
+            {{ visit.recommendation_text|default:"No recommendation yet."|linebreaksbr }}
+        </p>
+        <p class="muted" style="margin:12px 0 0; font-size:12px;">
+            Decision support only. Clinical judgement takes precedence.
+        </p>
+    </div>
+</div>
+
+<div class="result-box" style="margin-top:16px;">
+    <h4>Readings recorded</h4>
+    <div class="vitals-grid">
+        <div><strong>{{ visit.systolic_bp }}/{{ visit.diastolic_bp }}</strong><span>Blood pressure (mmHg)</span></div>
+        <div><strong>{{ visit.blood_sugar }}</strong><span>Blood sugar (mmol/L)</span></div>
+        <div><strong>{{ visit.body_temp }}</strong><span>Temperature (°F)</span></div>
+        <div><strong>{{ visit.bmi }}</strong><span>BMI</span></div>
+        <div><strong>{{ visit.heart_rate }}</strong><span>Heart rate (bpm)</span></div>
+        <div><strong>{{ visit.gestational_diabetes|yesno:"Yes,No" }}</strong><span>Gestational diabetes</span></div>
+        <div><strong>{{ visit.mental_health|yesno:"Yes,No" }}</strong><span>Mental health concerns</span></div>
+    </div>
+</div>
+
+{% if visit.feature_importance %}
+<div class="result-box" style="margin-top:16px;">
+    <h4>Features that influenced this prediction</h4>
+    {% for name, value in visit.feature_importance.items %}
+    <div class="importance-row">
+        <span class="importance-name">{{ name }}</span>
+        <span class="importance-track">
+            <span class="importance-bar" style="width: {% widthratio value 1 100 %}%;"></span>
+        </span>
+        <span class="importance-val">{% widthratio value 1 100 %}%</span>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="result-box" style="margin-top:16px;">
+    <h4>Symptoms</h4>
+    <p style="margin:0; line-height:1.6;">{{ visit.symptoms|default:"-"|linebreaksbr }}</p>
 </div>
 {% endblock %}

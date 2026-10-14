@@ -105,7 +105,7 @@ class Visit(models.Model):
 
     @property
     def risk_score(self):
-        return {"low": 1, "mid": 2, "high": 3}.get(self.risk_class)
+        return {"low": 1, "high": 2}.get(self.risk_class)
 
     @property
     def top_feature(self):
