@@ -3,80 +3,75 @@
 {% block title %}Dashboard - Materna{% endblock %}
 
 {% block content %}
-<h2>Welcome back, {{ user.first_name|default:user.username }}</h2>
-<p class="muted">Here's an overview of patients and visits across the clinic.</p>
+<section class="hero">
+    <div>
+        <h1>Welcome back, {{ user.first_name|default:user.username }}</h1>
+        <p>Open a patient's record with her hospital ID, or register a new patient.</p>
+    </div>
 
-<form method="get" action="{% url 'patient_lookup' %}" class="search-form lookup-box">
-    <input type="text" name="pid" placeholder="Enter patient ID to open her record" required autofocus>
-    <button type="submit" class="btn">Find patient</button>
-</form>
+    <form method="get" action="{% url 'patient_lookup' %}" class="hero-search">
+        <input type="text" name="pid" placeholder="Enter patient ID" required autofocus>
+        <button type="submit" class="btn">Find patient</button>
+    </form>
 
-<div class="stats">
-    <div class="stat-card">
-        <div class="stat-number">{{ patient_count }}</div>
-        <div class="stat-label">Patients</div>
+    <div class="hero-actions">
+        <a href="{% url 'patient_create' %}" class="btn">+ Add patient</a>
+        <a href="{% url 'patient_list' %}" class="btn-outline">View all patients</a>
     </div>
-    <div class="stat-card">
-        <div class="stat-number">{{ visit_count }}</div>
-        <div class="stat-label">Total visits</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-number">{{ month_visits }}</div>
-        <div class="stat-label">Visits this month</div>
-    </div>
+</section>
+
+<div class="dash-grid">
+    <section class="panel flush">
+        <div class="panel-head">
+            <h3>Recent visits</h3>
+        </div>
+        {% if recent_visits %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Patient</th>
+                    <th>Date</th>
+                    <th>Risk level</th>
+                    <th>Recorded by</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for visit in recent_visits %}
+                <tr>
+                    <td>
+                        <div class="cell-name">
+                            <span class="mini-avatar">{{ visit.patient.name|slice:":1"|upper }}</span>
+                            <div>
+                                <a href="{% url 'patient_detail' visit.patient.pk %}">{{ visit.patient.name }}</a><br>
+                                <small>ID {{ visit.patient.patient_id }}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td><a href="{% url 'visit_detail' visit.pk %}">{{ visit.visit_date|date:"d M Y" }}</a></td>
+                    <td>
+                        {% if visit.predicted_result %}
+                        <span class="badge {% if 'High' in visit.predicted_result %}high{% else %}low{% endif %}">{{ visit.predicted_result }}</span>
+                        {% else %}
+                        <span class="badge pending">Pending</span>
+                        {% endif %}
+                    </td>
+                    <td>{% if visit.recorded_by %}{{ visit.recorded_by.get_full_name|default:visit.recorded_by.username }}{% else %}-{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="muted" style="padding: 12px 28px 26px;">No visits recorded yet. Open a patient and add her first visit.</p>
+        {% endif %}
+    </section>
+
+    <section class="panel">
+        <div class="panel-head">
+            <h3>Clinic summary</h3>
+        </div>
+        <div class="summary-row"><span>Patients</span><strong>{{ patient_count }}</strong></div>
+        <div class="summary-row"><span>Total visits</span><strong>{{ visit_count }}</strong></div>
+        <div class="summary-row"><span>Visits this month</span><strong>{{ month_visits }}</strong></div>
+    </section>
 </div>
-
-<p>
-    <a href="{% url 'patient_create' %}" class="btn">+ Add Patient</a>
-    <a href="{% url 'patient_list' %}" class="btn-link">View all patients</a>
-</p>
-
-<h3>Recent visits</h3>
-{% if recent_visits %}
-<table>
-    <thead>
-        <tr>
-            <th>Date</th>
-            <th>Patient ID</th>
-            <th>Patient</th>
-            <th>Prediction</th>
-            <th>Recorded by</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for visit in recent_visits %}
-        <tr>
-            <td><a href="{% url 'visit_detail' visit.pk %}">{{ visit.visit_date }}</a></td>
-            <td>{{ visit.patient.patient_id }}</td>
-            <td><a href="{% url 'patient_detail' visit.patient.pk %}">{{ visit.patient.name }}</a></td>
-            <td>{{ visit.predicted_result|default:"Pending" }}</td>
-            <td>
-                {% if visit.recorded_by %}{{ visit.recorded_by.get_full_name|default:visit.recorded_by.username }}{% else %}-{% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-{% else %}
-<p class="muted">No visits recorded yet.</p>
-{% endif %}
-
-<h3>Risk summary</h3>
-{% if risk_summary %}
-<table>
-    <thead>
-        <tr><th>Predicted result</th><th>Visits</th></tr>
-    </thead>
-    <tbody>
-        {% for row in risk_summary %}
-        <tr>
-            <td>{{ row.predicted_result }}</td>
-            <td>{{ row.total }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-{% else %}
-<p class="muted">No predictions yet. Results will appear here once the risk model is connected.</p>
-{% endif %}
 {% endblock %}
