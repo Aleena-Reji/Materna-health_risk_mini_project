@@ -7,6 +7,7 @@ from django.utils import timezone
 from .forms import PatientForm, VisitForm
 from .models import Patient, Visit
 from . import predictor
+from django.core.paginator import Paginator
 
 
 def patients_for(user):
@@ -68,7 +69,12 @@ def patient_list(request):
         patients = patients.filter(
             Q(patient_id__icontains=q) | Q(name__icontains=q) | Q(contact__icontains=q)
         )
-    return render(request, "core/patient_list.html", {"patients": patients, "q": q})
+    page_obj = Paginator(patients, 10).get_page(request.GET.get("page"))
+    return render(request, "core/patient_list.html", {
+        "patients": page_obj,
+        "page_obj": page_obj,
+        "q": q,
+    })
 
 
 @login_required
@@ -85,12 +91,26 @@ def patient_create(request):
         form = PatientForm(initial={"patient_id": request.GET.get("patient_id", "")})
     return render(request, "core/patient_form.html", {"form": form, "title": "Add Patient"})
 
-
 @login_required
 def patient_detail(request, pk):
     patient = get_object_or_404(patients_for(request.user), pk=pk)
-    visits = patient.visits.select_related("recorded_by").order_by("-visit_date")
-    return render(request, "core/patient_detail.html", {"patient": patient, "visits": visits})
+    visits = patient.visits.select_related("recorded_by").order_by("-visit_date", "-created_at")
+    latest = visits.first()
+
+    trend = []
+    for v in reversed(list(visits)):          # oldest to newest for the chart
+        text = (v.predicted_result or "").lower()
+        if text.startswith("high"):
+            trend.append({"date": v.visit_date.strftime("%d %b %Y"), "score": 2})
+        elif text.startswith("low"):
+            trend.append({"date": v.visit_date.strftime("%d %b %Y"), "score": 1})
+
+    return render(request, "core/patient_detail.html", {
+        "patient": patient,
+        "visits": visits,
+        "latest": latest,
+        "trend": trend,
+    })
 
 
 @login_required
@@ -145,31 +165,3 @@ def visit_detail(request, pk):
     return render(request, "core/visit_detail.html", {"visit": visit})
 
 
-@login_required
-def visit_update(request, pk):
-    visit = get_object_or_404(visits_for(request.user), pk=pk)
-    if request.method == "POST":
-        form = VisitForm(request.POST, instance=visit)
-        if form.is_valid():
-            visit = form.save(commit=False)
-            apply_prediction(request, visit)
-            visit.save()
-            return redirect("visit_detail", pk=visit.pk)
-    else:
-        form = VisitForm(instance=visit)
-    return render(
-        request,
-        "core/visit_form.html",
-        {"form": form, "patient": visit.patient, "title": "Edit Visit"},
-    )
-
-
-@login_required
-def visit_delete(request, pk):
-    visit = get_object_or_404(visits_for(request.user), pk=pk)
-    patient_pk = visit.patient.pk
-    if request.method == "POST":
-        visit.delete()
-        messages.success(request, "Visit deleted.")
-        return redirect("patient_detail", pk=patient_pk)
-    return render(request, "core/visit_confirm_delete.html", {"visit": visit})
