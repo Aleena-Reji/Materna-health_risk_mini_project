@@ -6,30 +6,49 @@ from django.conf import settings
 BASE_DIR = settings.BASE_DIR
 MODEL = joblib.load(BASE_DIR / "maternal_health_random_forest.pkl")
 FEATURES = list(MODEL.feature_names_in_)
+HIGH_IDX = list(MODEL.classes_).index("High")
 
+# Global importance (kept for the report / optional insights page)
 try:
     with open(BASE_DIR / "feature_importance.json") as f:
         GLOBAL_IMPORTANCE = json.load(f)
 except FileNotFoundError:
     GLOBAL_IMPORTANCE = None
 
+# A typical Low-risk patient (median values from the training data)
+REFERENCE = {"Age": 25, "Systolic BP": 120, "Diastolic": 70, "BS": 6.5, "Body Temp": 98,
+             "BMI": 22, "Heart Rate": 72, "Previous Complications": 0,
+             "Preexisting Diabetes": 0, "Gestational Diabetes": 0, "Mental Health": 0}
+
+LABELS = {"Age": ("Age", "years"), "Systolic BP": ("Systolic BP", "mmHg"),
+          "Diastolic": ("Diastolic BP", "mmHg"), "BS": ("Blood sugar", "mmol/L"),
+          "Body Temp": ("Body temperature", "°F"), "BMI": ("BMI", ""),
+          "Heart Rate": ("Heart rate", "bpm"),
+          "Previous Complications": ("Previous complications", ""),
+          "Preexisting Diabetes": ("Pre-existing diabetes", ""),
+          "Gestational Diabetes": ("Gestational diabetes", ""),
+          "Mental Health": ("Mental health concern", "")}
+
 BINARY_KEYS = {"Previous Complications", "Preexisting Diabetes",
                "Gestational Diabetes", "Mental Health"}
 
 
 def explain(inputs):
-    """Top 5 model factors, each shown with this patient's own value."""
-    if not GLOBAL_IMPORTANCE:
-        return None
-    rows = []
-    for f in GLOBAL_IMPORTANCE["features"][:5]:
-        v = inputs.get(f["key"])
-        if f["key"] in BINARY_KEYS:
-            v = "Yes" if v else "No"
-        else:
-            v = float(v)
-        rows.append({"name": f["name"], "percent": f["percent"], "value": v})
-    return rows
+    """Readings that raised this patient's risk, strongest first."""
+    row = pd.DataFrame([inputs], columns=FEATURES)
+    base = MODEL.predict_proba(row)[0][HIGH_IDX]
+    items = []
+    for key in FEATURES:
+        alt = row.copy()
+        alt[key] = REFERENCE[key]
+        effect = base - MODEL.predict_proba(alt)[0][HIGH_IDX]
+        if effect >= 0.02:
+            name, unit = LABELS[key]
+            v = inputs[key]
+            shown = "Yes" if key in BINARY_KEYS else (f"{float(v):g} {unit}").strip()
+            items.append({"name": name, "value": shown, "effect": round(float(effect), 3)})
+    items.sort(key=lambda x: -x["effect"])
+    return items[:6]
 
 
 def build_recommendation(label, visit):
