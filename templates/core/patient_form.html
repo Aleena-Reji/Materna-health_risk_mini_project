@@ -3,16 +3,76 @@
 {% block title %}{{ title }} - Materna{% endblock %}
 
 {% block content %}
-<h2>{{ title }}</h2>
-
-<form method="post" class="card-form">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit" class="btn">Save Patient</button>
+<div class="form-wrap">
     {% if form.instance.pk %}
-        <a href="{% url 'patient_detail' form.instance.pk %}" class="btn-link">Cancel</a>
+        <a href="{% url 'patient_detail' form.instance.pk %}" class="back-link">← Back to {{ form.instance.name }}</a>
     {% else %}
-        <a href="{% url 'patient_list' %}" class="btn-link">Cancel</a>
+        <a href="{% url 'patient_list' %}" class="back-link">← Back to patients</a>
     {% endif %}
-</form>
+
+    <div class="page-head">
+        <div>
+            <h1 class="page-title">{{ title }}</h1>
+            <p class="page-sub">{% if form.instance.pk %}Update her details and medical history.{% else %}Register her once, then record a visit each time she comes in.{% endif %}</p>
+        </div>
+    </div>
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="form-error">{{ form.non_field_errors|join:" " }}</div>
+        {% endif %}
+
+        <section class="form-card">
+            <h3>Patient details</h3>
+            <p class="hint">Use the registration number from the hospital or clinic.</p>
+            <div class="field-grid">
+                <div class="field">
+                    <label for="{{ form.patient_id.id_for_label }}">Patient ID</label>
+                    {{ form.patient_id }}
+                    {% if form.patient_id.help_text %}<div class="field-note">{{ form.patient_id.help_text }}</div>{% endif %}
+                    {% if form.patient_id.errors %}<div class="err">{{ form.patient_id.errors|join:" " }}</div>{% endif %}
+                </div>
+                <div class="field">
+                    <label for="{{ form.name.id_for_label }}">Full name</label>
+                    {{ form.name }}
+                    {% if form.name.errors %}<div class="err">{{ form.name.errors|join:" " }}</div>{% endif %}
+                </div>
+                <div class="field">
+                    <label for="{{ form.age.id_for_label }}">Age (years)</label>
+                    {{ form.age }}
+                    {% if form.age.errors %}<div class="err">{{ form.age.errors|join:" " }}</div>{% endif %}
+                </div>
+                <div class="field">
+                    <label for="{{ form.contact.id_for_label }}">Contact number</label>
+                    {{ form.contact }}
+                    {% if form.contact.errors %}<div class="err">{{ form.contact.errors|join:" " }}</div>{% endif %}
+                </div>
+            </div>
+        </section>
+
+        <section class="form-card">
+            <h3>Medical history</h3>
+            <p class="hint">Tick anything that applies to her.</p>
+            <label class="check-row">
+                {{ form.previous_complications }}
+                <span>Previous pregnancy complications<small>Any complication in an earlier pregnancy</small></span>
+            </label>
+            <label class="check-row">
+                {{ form.preexisting_diabetes }}
+                <span>Pre-existing diabetes<small>Diabetes diagnosed before this pregnancy</small></span>
+            </label>
+        </section>
+
+        <div class="form-actions">
+            <button type="submit" class="btn">Save patient</button>
+            {% if form.instance.pk %}
+                <a href="{% url 'patient_detail' form.instance.pk %}" class="btn-outline">Cancel</a>
+            {% else %}
+                <a href="{% url 'patient_list' %}" class="btn-outline">Cancel</a>
+            {% endif %}
+        </div>
+    </form>
+</div>
 {% endblock %}

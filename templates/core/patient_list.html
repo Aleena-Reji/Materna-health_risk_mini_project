@@ -3,7 +3,17 @@
 {% block title %}Patients - Materna{% endblock %}
 
 {% block content %}
-<h2>Patients</h2>
+<a href="{% url 'dashboard' %}" class="back-link">← Back to dashboard</a>
+
+<div class="page-head">
+    <div>
+        <h1 class="page-title">Patients</h1>
+        <p class="page-sub">{% if q %}{{ page_obj.paginator.count }} result{{ page_obj.paginator.count|pluralize }} for "{{ q }}"{% else %}{{ page_obj.paginator.count }} patient{{ page_obj.paginator.count|pluralize }} registered at this clinic{% endif %}</p>
+    </div>
+    <div class="head-actions">
+        <a href="{% url 'patient_create' %}" class="btn">+ Add patient</a>
+    </div>
+</div>
 
 <div class="toolbar">
     <form method="get" class="search-form">
@@ -11,30 +21,35 @@
         <button type="submit" class="btn">Search</button>
         {% if q %}<a href="{% url 'patient_list' %}" class="btn-link">Clear</a>{% endif %}
     </form>
-    <a href="{% url 'patient_create' %}" class="btn">+ Add Patient</a>
 </div>
 
 {% if patients %}
 <table>
     <thead>
         <tr>
-            <th>ID</th>
-            <th>Name</th>
+            <th>Patient</th>
             <th>Age</th>
             <th>Contact</th>
             <th>Visits</th>
-            <th>Actions</th>
+            <th></th>
         </tr>
     </thead>
     <tbody>
         {% for patient in patients %}
         <tr>
-            <td>{{ patient.patient_id }}</td>
-            <td><a href="{% url 'patient_detail' patient.pk %}">{{ patient.name }}</a></td>
+            <td>
+                <div class="cell-name">
+                    <span class="mini-avatar">{{ patient.name|slice:":1"|upper }}</span>
+                    <div>
+                        <a href="{% url 'patient_detail' patient.pk %}">{{ patient.name }}</a><br>
+                        <small>ID {{ patient.patient_id }}</small>
+                    </div>
+                </div>
+            </td>
             <td>{{ patient.age|default:"-" }}</td>
             <td>{{ patient.contact|default:"-" }}</td>
             <td>{{ patient.visits.count }}</td>
-            <td>
+            <td style="text-align:right;">
                 <a href="{% url 'patient_update' patient.pk %}" class="action">Edit</a>
                 <a href="{% url 'patient_delete' patient.pk %}" class="action danger">Delete</a>
             </td>
@@ -42,7 +57,17 @@
         {% endfor %}
     </tbody>
 </table>
+
+{% if page_obj.has_other_pages %}
+<div class="pager">
+    {% if page_obj.has_previous %}<a class="btn-outline" href="?q={{ q|urlencode }}&page={{ page_obj.previous_page_number }}">← Previous</a>{% endif %}
+    <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}<a class="btn-outline" href="?q={{ q|urlencode }}&page={{ page_obj.next_page_number }}">Next →</a>{% endif %}
+</div>
+{% endif %}
 {% else %}
-<p>{% if q %}No patients match "{{ q }}".{% else %}No patients yet.{% endif %}</p>
+<div class="panel">
+    <p class="muted" style="margin:0;">{% if q %}No patients match "{{ q }}". Check the ID or try her name.{% else %}No patients yet. Add the first patient to get started.{% endif %}</p>
+</div>
 {% endif %}
 {% endblock %}
