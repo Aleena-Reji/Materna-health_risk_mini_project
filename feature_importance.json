@@ -1,0 +1,61 @@
+{
+  "method": "Random Forest feature importance (mean decrease in impurity)",
+  "rows_used": 1169,
+  "features": [
+    {
+      "key": "BS",
+      "name": "Blood sugar",
+      "percent": 24.1
+    },
+    {
+      "key": "Preexisting Diabetes",
+      "name": "Pre-existing diabetes",
+      "percent": 19.0
+    },
+    {
+      "key": "BMI",
+      "name": "BMI",
+      "percent": 15.3
+    },
+    {
+      "key": "Heart Rate",
+      "name": "Heart rate",
+      "percent": 15.0
+    },
+    {
+      "key": "Mental Health",
+      "name": "Mental health",
+      "percent": 9.9
+    },
+    {
+      "key": "Gestational Diabetes",
+      "name": "Gestational diabetes",
+      "percent": 7.7
+    },
+    {
+      "key": "Previous Complications",
+      "name": "Previous complications",
+      "percent": 4.1
+    },
+    {
+      "key": "Systolic BP",
+      "name": "Systolic BP",
+      "percent": 1.9
+    },
+    {
+      "key": "Age",
+      "name": "Age",
+      "percent": 1.4
+    },
+    {
+      "key": "Diastolic",
+      "name": "Diastolic BP",
+      "percent": 1.3
+    },
+    {
+      "key": "Body Temp",
+      "name": "Body temperature",
+      "percent": 0.3
+    }
+  ]
+}

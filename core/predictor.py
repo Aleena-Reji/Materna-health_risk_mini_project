@@ -1,90 +1,92 @@
 import json
-
 import joblib
 import pandas as pd
 from django.conf import settings
 
-MODEL_PATH = settings.BASE_DIR / "risk_model.joblib"
-ORDER_PATH = settings.BASE_DIR / "feature_order.json"
-MODEL_VERSION = "v1"
+BASE_DIR = settings.BASE_DIR
+MODEL = joblib.load(BASE_DIR / "maternal_health_random_forest.pkl")
+FEATURES = list(MODEL.feature_names_in_)
 
-    # Assumption: class 0 = low risk, class 1 = high risk
-LABELS = {0: "High Risk", 1: "Low Risk"}
+try:
+    with open(BASE_DIR / "feature_importance.json") as f:
+        GLOBAL_IMPORTANCE = json.load(f)
+except FileNotFoundError:
+    GLOBAL_IMPORTANCE = None
 
-_model = None
-_order = None
+BINARY_KEYS = {"Previous Complications", "Preexisting Diabetes",
+               "Gestational Diabetes", "Mental Health"}
 
 
-def _load():
-    global _model, _order
-    if _model is None:
-        _model = joblib.load(MODEL_PATH)
-        with open(ORDER_PATH) as f:
-            _order = json.load(f)
-    return _model, _order
+def explain(inputs):
+    """Top 5 model factors, each shown with this patient's own value."""
+    if not GLOBAL_IMPORTANCE:
+        return None
+    rows = []
+    for f in GLOBAL_IMPORTANCE["features"][:5]:
+        v = inputs.get(f["key"])
+        if f["key"] in BINARY_KEYS:
+            v = "Yes" if v else "No"
+        else:
+            v = float(v)
+        rows.append({"name": f["name"], "percent": f["percent"], "value": v})
+    return rows
 
 
 def build_recommendation(label, visit):
     patient = visit.patient
-    if label == "High Risk":
-        lines = [
-            "High risk: refer the patient to a doctor or obstetric specialist for review.",
-            "Arrange close monitoring and a follow-up visit within one week.",
-        ]
-    else:
-        lines = [
-            "Low risk: continue routine antenatal care.",
-            "Advise a balanced diet, rest, hydration and regular scheduled checkups.",
-        ]
-
+    notes = []
     if visit.systolic_bp >= 140 or visit.diastolic_bp >= 90:
-        lines.append("Blood pressure is raised (140/90 mmHg or above): recheck, and ask about headache, blurred vision or swelling.")
-    if visit.blood_sugar >= 7.8:
-        lines.append("Blood sugar is high: review diet and glucose monitoring.")
-    if visit.body_temp >= 100.4:
-        lines.append("Temperature suggests a fever: look for signs of infection.")
+        notes.append("Blood pressure is high; recheck and monitor for signs of preeclampsia.")
+    if float(visit.blood_sugar) >= 7.8:
+        notes.append("Blood sugar is raised; arrange glucose monitoring and dietary advice.")
+    if float(visit.body_temp) >= 100.4:
+        notes.append("Temperature suggests fever; look for signs of infection.")
     if visit.heart_rate > 100:
-        lines.append("Heart rate is above 100 bpm: recheck after rest.")
-    if visit.bmi >= 30:
-        lines.append("BMI is in the obese range: nutrition and weight-gain counselling.")
-    elif visit.bmi < 18.5:
-        lines.append("BMI is low: nutrition support and weight-gain monitoring.")
-    if visit.gestational_diabetes or patient.preexisting_diabetes:
-        lines.append("Diabetes noted: keep glucose monitoring regular.")
+        notes.append("Heart rate is above 100 bpm; review and recheck.")
+    bmi = float(visit.bmi)
+    if bmi >= 30:
+        notes.append("BMI is in the obese range; nutrition and activity guidance advised.")
+    elif bmi < 18.5:
+        notes.append("BMI is low; nutritional support advised.")
+    if patient.preexisting_diabetes or visit.gestational_diabetes:
+        notes.append("Diabetes is present; needs regular glucose follow-up.")
     if visit.mental_health:
-        lines.append("Mental health concern noted: offer counselling or a support referral.")
+        notes.append("Mental health concern noted; offer counselling or screening.")
     if patient.previous_complications:
-        lines.append("Previous complications: plan delivery at a facility that can manage them.")
-    return "\n".join(lines)
+        notes.append("Previous complications recorded; closer antenatal monitoring advised.")
+
+    if label.startswith("High"):
+        head = "High risk: refer to a doctor or hospital for closer monitoring."
+    else:
+        head = "Low risk: continue routine antenatal care and regular check-ups."
+    return head + ("\n" + "\n".join("- " + n for n in notes) if notes else "")
 
 
 def predict_visit(visit):
-    """Fill the prediction fields on an (unsaved or saved) Visit."""
-    model, order = _load()
     patient = visit.patient
-
-    values = {
+    inputs = {
         "Age": patient.age,
         "Systolic BP": visit.systolic_bp,
         "Diastolic": visit.diastolic_bp,
-        "BS": visit.blood_sugar,
-        "Body Temp": visit.body_temp,
-        "BMI": visit.bmi,
+        "BS": float(visit.blood_sugar),
+        "Body Temp": float(visit.body_temp),
+        "BMI": float(visit.bmi),
         "Previous Complications": int(patient.previous_complications),
         "Preexisting Diabetes": int(patient.preexisting_diabetes),
         "Gestational Diabetes": int(visit.gestational_diabetes),
         "Mental Health": int(visit.mental_health),
         "Heart Rate": visit.heart_rate,
     }
-    frame = pd.DataFrame([values], columns=order)
+    df = pd.DataFrame([inputs], columns=FEATURES)
 
-    probabilities = model.predict_proba(frame)[0]
-    best = int(probabilities.argmax())
-    label = LABELS[int(model.classes_[best])]
+    proba = MODEL.predict_proba(df)[0]
+    idx = int(proba.argmax())
+    label = f"{MODEL.classes_[idx]} Risk"        # "High Risk" or "Low Risk"
 
     visit.predicted_result = label
-    visit.prediction_confidence = round(float(probabilities[best]), 3)
-    visit.model_version = MODEL_VERSION
-    visit.feature_importance = None
+    visit.prediction_confidence = round(float(proba[idx]), 3)
+    visit.model_version = "random_forest_v2"
+    visit.feature_importance = explain(inputs)
     visit.recommendation_text = build_recommendation(label, visit)
+    visit.save()
     return label
