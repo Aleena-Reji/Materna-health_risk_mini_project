@@ -3,16 +3,103 @@
 {% block title %}{{ title }} - Materna{% endblock %}
 
 {% block content %}
-<h2>{{ title }} for {{ patient.name }}</h2>
+<div class="form-wrap">
+    <a href="{% url 'patient_detail' patient.pk %}" class="back-link">← Back to {{ patient.name }}</a>
 
-<form method="post" class="card-form">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit" class="btn">Save Visit</button>
-    {% if form.instance.pk %}
-        <a href="{% url 'visit_detail' form.instance.pk %}" class="btn-link">Cancel</a>
-    {% else %}
-        <a href="{% url 'patient_detail' patient.pk %}" class="btn-link">Cancel</a>
-    {% endif %}
-</form>
+    <div class="page-head">
+        <div>
+            <h1 class="page-title">{{ title }}</h1>
+            <p class="page-sub">{{ patient.name }} (ID {{ patient.patient_id }}) &nbsp;·&nbsp; {{ patient.age }} years</p>
+        </div>
+    </div>
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="form-error">{{ form.non_field_errors|join:" " }}</div>
+        {% endif %}
+
+        <section class="form-card">
+            <h3>Visit date</h3>
+            <p class="hint">When were these readings taken?</p>
+            <div class="field" style="max-width:280px;">
+                <label for="{{ form.visit_date.id_for_label }}">Date of visit</label>
+                {{ form.visit_date }}
+                {% if form.visit_date.errors %}<div class="err">{{ form.visit_date.errors|join:" " }}</div>{% endif %}
+            </div>
+        </section>
+
+        <section class="form-card">
+            <h3>Clinical readings</h3>
+            <p class="hint">Enter the measurements taken at this visit.</p>
+            <div class="field-grid">
+                <div class="field">
+                    <label for="{{ form.systolic_bp.id_for_label }}">Systolic blood pressure (mmHg)</label>
+                    {{ form.systolic_bp }}
+                    {% if form.systolic_bp.errors %}<div class="err">{{ form.systolic_bp.errors|join:" " }}</div>{% endif %}
+                </div>
+                <div class="field">
+                    <label for="{{ form.diastolic_bp.id_for_label }}">Diastolic blood pressure (mmHg)</label>
+                    {{ form.diastolic_bp }}
+                    {% if form.diastolic_bp.errors %}<div class="err">{{ form.diastolic_bp.errors|join:" " }}</div>{% endif %}
+                </div>
+                <div class="field">
+                    <label for="{{ form.blood_sugar.id_for_label }}">Blood sugar (mmol/L)</label>
+                    {{ form.blood_sugar }}
+                    {% if form.blood_sugar.errors %}<div class="err">{{ form.blood_sugar.errors|join:" " }}</div>{% endif %}
+                </div>
+                <div class="field">
+                    <label for="{{ form.body_temp.id_for_label }}">Body temperature (°F)</label>
+                    {{ form.body_temp }}
+                    {% if form.body_temp.errors %}<div class="err">{{ form.body_temp.errors|join:" " }}</div>{% endif %}
+                </div>
+                <div class="field">
+                    <label for="{{ form.bmi.id_for_label }}">BMI (kg/m²)</label>
+                    {{ form.bmi }}
+                    {% if form.bmi.errors %}<div class="err">{{ form.bmi.errors|join:" " }}</div>{% endif %}
+                </div>
+                <div class="field">
+                    <label for="{{ form.heart_rate.id_for_label }}">Heart rate (bpm)</label>
+                    {{ form.heart_rate }}
+                    {% if form.heart_rate.errors %}<div class="err">{{ form.heart_rate.errors|join:" " }}</div>{% endif %}
+                </div>
+            </div>
+        </section>
+
+        <section class="form-card">
+            <h3>Medical history</h3>
+            <p class="hint">Tick anything that applies to her.</p>
+
+            <label class="check-row">
+                {{ form.gestational_diabetes }}
+                <span>Gestational diabetes<small>Diabetes first found during this pregnancy</small></span>
+            </label>
+            <label class="check-row">
+                {{ form.mental_health }}
+                <span>Mental health concern<small>Any mental health concern noted by the health worker</small></span>
+            </label>
+
+            <div class="field-note" style="margin-top:16px;">
+                On record: previous complications <strong>{{ patient.previous_complications|yesno:"Yes,No" }}</strong>,
+                pre-existing diabetes <strong>{{ patient.preexisting_diabetes|yesno:"Yes,No" }}</strong>.
+                <a href="{% url 'patient_update' patient.pk %}">Change</a>
+            </div>
+        </section>
+
+        <section class="form-card">
+            <h3>Notes</h3>
+            <p class="hint">Optional. Symptoms or anything else worth recording.</p>
+            <div class="field">
+                {{ form.symptoms }}
+                {% if form.symptoms.errors %}<div class="err">{{ form.symptoms.errors|join:" " }}</div>{% endif %}
+            </div>
+        </section>
+
+        <div class="form-actions">
+            <button type="submit" class="btn">Save and get risk result</button>
+            <a href="{% url 'patient_detail' patient.pk %}" class="btn-outline">Cancel</a>
+        </div>
+    </form>
+</div>
 {% endblock %}

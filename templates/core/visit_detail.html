@@ -1,75 +1,69 @@
 {% extends "core/base.html" %}
 
-{% block title %}Visit - Materna{% endblock %}
+{% block title %}Visit result - Materna{% endblock %}
 
 {% block content %}
-<h2>Visit on {{ visit.visit_date }}</h2>
-<p class="muted">
-    Patient:
-    <a href="{% url 'patient_detail' visit.patient.pk %}">{{ visit.patient.name }}</a>
-    ({{ visit.patient.patient_id }}) &nbsp;|&nbsp;
-    Recorded {{ visit.created_at }}
-    {% if visit.recorded_by %}by {{ visit.recorded_by.get_full_name|default:visit.recorded_by.username }}{% endif %}
-</p>
+<a href="{% url 'patient_detail' visit.patient.pk %}" class="back-link">← Back to {{ visit.patient.name }}</a>
 
-<p>
-    <a href="{% url 'visit_update' visit.pk %}" class="btn">Edit</a>
-    <a href="{% url 'visit_delete' visit.pk %}" class="btn-link danger">Delete</a>
-    <a href="{% url 'patient_detail' visit.patient.pk %}" class="btn-link">Back to patient</a>
-</p>
-
-<div class="result-grid">
-    <div class="result-box big-risk">
-        <h4>Predicted risk level</h4>
-        {% include "core/_risk_badge.html" with visit=visit %}
-        <p class="muted" style="margin:12px 0 0;">
-            Confidence:
-            {% if visit.prediction_confidence is not None %}{% widthratio visit.prediction_confidence 1 100 %}%{% else %}-{% endif %}
-            <br>Model version: {{ visit.model_version|default:"-" }}
-        </p>
-    </div>
-
-    <div class="result-box">
-        <h4>Recommendation</h4>
-        <p style="margin:0; line-height:1.6;">
-            {{ visit.recommendation_text|default:"No recommendation yet."|linebreaksbr }}
-        </p>
-        <p class="muted" style="margin:12px 0 0; font-size:12px;">
-            Decision support only. Clinical judgement takes precedence.
+<div class="page-head">
+    <div>
+        <h1 class="page-title">Visit on {{ visit.visit_date|date:"d M Y" }}</h1>
+        <p class="page-sub">
+            {{ visit.patient.name }} (ID {{ visit.patient.patient_id }}) &nbsp;·&nbsp;
+            recorded by {% if visit.recorded_by %}{{ visit.recorded_by.get_full_name|default:visit.recorded_by.username }}{% else %}-{% endif %}
+            on {{ visit.created_at|date:"d M Y, g:i a" }}
         </p>
     </div>
 </div>
 
-<div class="result-box" style="margin-top:16px;">
-    <h4>Readings recorded</h4>
-    <div class="vitals-grid">
-        <div><strong>{{ visit.systolic_bp }}/{{ visit.diastolic_bp }}</strong><span>Blood pressure (mmHg)</span></div>
-        <div><strong>{{ visit.blood_sugar }}</strong><span>Blood sugar (mmol/L)</span></div>
-        <div><strong>{{ visit.body_temp }}</strong><span>Temperature (°F)</span></div>
-        <div><strong>{{ visit.bmi }}</strong><span>BMI</span></div>
-        <div><strong>{{ visit.heart_rate }}</strong><span>Heart rate (bpm)</span></div>
-        <div><strong>{{ visit.gestational_diabetes|yesno:"Yes,No" }}</strong><span>Gestational diabetes</span></div>
-        <div><strong>{{ visit.mental_health|yesno:"Yes,No" }}</strong><span>Mental health concerns</span></div>
+<section class="result-hero {% if not visit.predicted_result %}pending{% elif 'High' in visit.predicted_result %}high{% else %}low{% endif %}">
+    <div>
+        <div class="label">Predicted risk level</div>
+        <div class="level">{{ visit.predicted_result|default:"Pending" }}</div>
     </div>
+    <div class="note">Decision support only. Clinical judgement takes precedence.</div>
+</section>
+
+<div class="result-cols">
+    <section class="panel">
+        <div class="panel-head"><h3>Recommendation</h3></div>
+        <div class="rec-text">{{ visit.recommendation_text }}</div>
+    </section>
+
+    {% if visit.feature_importance is not None %}
+    <section class="panel">
+        <div class="panel-head">
+            <h3>What influenced this result</h3>
+        </div>
+        {% if visit.feature_importance %}
+            <div class="panel-note" style="margin:-8px 0 6px;">Strongest first</div>
+            {% for f in visit.feature_importance %}
+            <div class="factor-row"><span>{{ f.name }}</span><strong>{{ f.value }}</strong></div>
+            {% endfor %}
+        {% else %}
+            <p class="muted" style="margin:0;">No single reading stands out as raising the risk.</p>
+        {% endif %}
+    </section>
+    {% endif %}
 </div>
 
-{% if visit.feature_importance %}
-<div class="result-box" style="margin-top:16px;">
-    <h4>Features that influenced this prediction</h4>
-    {% for name, value in visit.feature_importance.items %}
-    <div class="importance-row">
-        <span class="importance-name">{{ name }}</span>
-        <span class="importance-track">
-            <span class="importance-bar" style="width: {% widthratio value 1 100 %}%;"></span>
-        </span>
-        <span class="importance-val">{% widthratio value 1 100 %}%</span>
+<section class="panel" style="margin-top:22px;">
+    <div class="panel-head"><h3>Readings recorded</h3></div>
+    <div class="tiles">
+        <div class="tile"><strong>{{ visit.systolic_bp }}/{{ visit.diastolic_bp }}</strong><span>Blood pressure (mmHg)</span></div>
+        <div class="tile"><strong>{{ visit.blood_sugar }}</strong><span>Blood sugar (mmol/L)</span></div>
+        <div class="tile"><strong>{{ visit.body_temp }}</strong><span>Temperature (°F)</span></div>
+        <div class="tile"><strong>{{ visit.bmi }}</strong><span>BMI (kg/m²)</span></div>
+        <div class="tile"><strong>{{ visit.heart_rate }}</strong><span>Heart rate (bpm)</span></div>
     </div>
-    {% endfor %}
-</div>
-{% endif %}
-
-<div class="result-box" style="margin-top:16px;">
-    <h4>Symptoms</h4>
-    <p style="margin:0; line-height:1.6;">{{ visit.symptoms|default:"-"|linebreaksbr }}</p>
-</div>
+    <div class="chips">
+        <span class="chip {% if visit.patient.previous_complications %}on{% endif %}">Previous complications <strong>{{ visit.patient.previous_complications|yesno:"Yes,No" }}</strong></span>
+        <span class="chip {% if visit.patient.preexisting_diabetes %}on{% endif %}">Pre-existing diabetes <strong>{{ visit.patient.preexisting_diabetes|yesno:"Yes,No" }}</strong></span>
+        <span class="chip {% if visit.gestational_diabetes %}on{% endif %}">Gestational diabetes <strong>{{ visit.gestational_diabetes|yesno:"Yes,No" }}</strong></span>
+        <span class="chip {% if visit.mental_health %}on{% endif %}">Mental health concern <strong>{{ visit.mental_health|yesno:"Yes,No" }}</strong></span>
+    </div>
+    {% if visit.symptoms %}
+    <p style="margin:18px 0 0;"><strong>Symptoms noted:</strong> {{ visit.symptoms }}</p>
+    {% endif %}
+</section>
 {% endblock %}
